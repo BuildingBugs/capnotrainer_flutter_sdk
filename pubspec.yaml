@@ -1,6 +1,6 @@
 name: capnotrainer_sdk
 description: A Flutter SDK for CapnoTrainer
-version: 0.0.1
+version: 1.0.1
 homepage:
 
 environment:

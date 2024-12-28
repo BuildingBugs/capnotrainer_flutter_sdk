@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:capnotrainer_sdk/capnotrainer_sim.dart';
 import 'package:intl/intl.dart';
 import 'package:capnotrainer_sdk/capnotrainer_utils.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ import 'package:capnotrainer_sdk/capnotrainer_sdk.dart';
 class BLEScreen extends StatefulWidget {
   BLEScreen() : super();
   final List<BleCapnos> capnoDevices = <BleCapnos>[];
+  final List<CapnoTrainerSimulation> capnoDevicesSim = <CapnoTrainerSimulation>[];
+  
   final List<BluetoothDevice> bleDevices = <BluetoothDevice>[];
   String bleStatusMsg = "Status: None";
   String btnText = "Connect";
@@ -19,6 +22,8 @@ class BLEScreen extends StatefulWidget {
   double bpm = 0;
   double insp_co2 = 0;
   bool airwayBlocked = false;
+  
+  bool isSimulated = false; 
 
   @override
   _BLEScreenState createState() => _BLEScreenState();
@@ -26,6 +31,7 @@ class BLEScreen extends StatefulWidget {
 
 class _BLEScreenState extends State<BLEScreen> {
   CapnoTrainer capnoTrainer = CapnoTrainer();
+  CapnoTrainerSimulation capnoTrainerSim = CapnoTrainerSimulation();
 
   _addDeviceTolist(final BluetoothDevice device) async {
 
@@ -109,7 +115,7 @@ class _BLEScreenState extends State<BLEScreen> {
     switch(code){
       case CapnoTraienrStatusCodes.CODE_CONNECTED:
         {
-          setState(() => widget.bleStatusMsg = "Status: Connected to ${capnoTrainer.device.advName}");
+          setState(() => widget.bleStatusMsg = "Status: Connected to ${widget.isSimulated ? capnoTrainerSim.title : capnoTrainer.device.advName}");
           setState(() => widget.btnText = "Disconnect");
         } break;
       case CapnoTraienrStatusCodes.CODE_DISCONNECTED:
@@ -158,14 +164,22 @@ class _BLEScreenState extends State<BLEScreen> {
   }
 
   void handleButton(int index) async{
-    if (!capnoTrainer.isConnected){
-      setState(() => widget.bleStatusMsg = "Status: Connecting to ${widget.bleDevices.elementAt(index).advName}");
-      await FlutterBluePlus.stopScan();
-      await capnoTrainer.connect(widget.bleDevices.elementAt(index), onDataReceived);
-    } else {
-      await capnoTrainer.disconnect();
+    if ( widget.isSimulated ) { 
+      if (!capnoTrainerSim.isConnected){
+        setState(() => widget.bleStatusMsg = "Connected");  
+        await capnoTrainerSim.connect(onDataReceived);
+      } else {
+        await capnoTrainerSim.disconnect();
+      }
+    } else { 
+      if (!capnoTrainer.isConnected){
+        setState(() => widget.bleStatusMsg = "Status: Connecting to ${widget.bleDevices.elementAt(index).advName}");
+        await FlutterBluePlus.stopScan();
+        await capnoTrainer.connect(widget.bleDevices.elementAt(index), onDataReceived);
+      } else {
+        await capnoTrainer.disconnect();
+      }
     }
-    print (capnoTrainer.isConnected);
   }
 
   @override
@@ -195,14 +209,101 @@ class _BLEScreenState extends State<BLEScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Text("Use Simulation"),
+                
+                Switch(
+                  value: widget.isSimulated,
+                  onChanged: (value) {
+                    setState(() {
+                      widget.isSimulated = value;
+                      if ( widget.isSimulated ) {
+                        widget.capnoDevicesSim.add(capnoTrainerSim); 
+                      } else { 
+                        if ( capnoTrainerSim.isConnected ){ 
+                          capnoTrainerSim.disconnect();
+                        }
+                        widget.capnoDevicesSim.clear();
+                      }
+                    });
+                  },
+                  activeColor: Colors.green,
+                  inactiveThumbColor: Colors.red,
+                  inactiveTrackColor: Colors.grey,
+                ),
+              ],
+            ),
+            const Divider(
+              thickness: 1,
+            ),
             Text(widget.bleStatusMsg),
             const Divider(
               thickness: 1,
             ),
+            widget.isSimulated ? 
+            _buildDeviceViewSim() :
             _buildDeviceView()
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDeviceViewSim() {
+    return Column(
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * .75,
+          child: ListView.builder(
+            itemCount:  widget.capnoDevicesSim.length,
+            itemBuilder: (context, index) => Column(
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+                  minLeadingWidth: 0,
+                  horizontalTitleGap: 4,
+                  leading: const Icon(
+                    Icons.bluetooth,
+                    size: 36,
+                  ),
+                  title: Text(
+                    widget.capnoDevicesSim.elementAt(index).title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text(
+                    widget.capnoDevicesSim.elementAt(index).subtitle,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w300, fontSize: 13),
+                  ),
+                  trailing: OutlinedButton(
+                    onPressed: () async {handleButton(index);},
+                    child: Text(widget.btnText),
+                  )),
+                  
+                const Divider(thickness: 2,),
+                Text("Battery: ${widget.battery.toStringAsFixed(2)}%  |  Airway Blocked: ${widget.airwayBlocked ? 'Yes' : 'No'}"),
+                const Divider(thickness: 2,),
+                Text(
+                    " BPM:  ${widget.bpm.toStringAsFixed(2)} | "
+                    " ETCO2: ${widget.etco2.toStringAsFixed(2)} mmHg"
+                ),
+
+                const Divider(thickness: 2,),
+                const Text("Raw CO2 Data"),
+                SizedBox(height: 5,),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height*0.3,
+                  width: MediaQuery.of(context).size.width,
+                  child: _tableView(context),
+                )
+              ],
+            ))),
+      ],
     );
   }
 
@@ -212,7 +313,7 @@ class _BLEScreenState extends State<BLEScreen> {
         SizedBox(
           height: MediaQuery.of(context).size.height * .75,
           child: ListView.builder(
-            itemCount: widget.capnoDevices.length,
+            itemCount:  widget.capnoDevices.length,
             itemBuilder: (context, index) => Column(
               children: [
                 ListTile(
@@ -288,7 +389,7 @@ class _BLEScreenState extends State<BLEScreen> {
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                 ),
-                child: Text("${widget.co2[index].y.toString()} mmHg"),
+                child: Text("${widget.co2[index].y.toStringAsFixed(2)} mmHg"),
               ),
             ),
           ],
