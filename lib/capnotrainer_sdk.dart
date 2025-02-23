@@ -5,7 +5,7 @@ import 'package:capnotrainer_sdk/capnotrainer_go_parser.dart';
 
 class CapnoTrainer {
 
-  final bool _printLog = false;
+  bool _printLog = false;
   late BluetoothDevice device;
   late Function onDataReceived;
   late BluetoothCharacteristic _readCharacteristic;
@@ -26,7 +26,8 @@ class CapnoTrainer {
 
   bool get isConnected => _deviceConnectionState == BluetoothConnectionState.connected;
 
-  Future<void> connect(BluetoothDevice d, Function onData) async {
+  Future<void> connect(BluetoothDevice d, Function onData, bool debug) async {
+   _printLog = debug;
     device = d;
     onDataReceived = onData;
 
