@@ -71,16 +71,17 @@ class _BLEScreenState extends State<BLEScreen> {
 
   void handleBluetoothScans() async {
 
-    bool isLocation = await _checkDeviceLocationIsOn();
-    bool isBle = await _checkDeviceBluetoothIsOn();
+    // bool isLocation = await _checkDeviceLocationIsOn();
+    // bool isBle = await _checkDeviceBluetoothIsOn();
 
-    if (!isLocation){ setState( () =>   widget.bleStatusMsg = "Status: Turn on mobile location");}
-    if (!isBle){ setState(() => widget.bleStatusMsg = "Status: Turn on mobile bluetooth adapter");}
-    if ( !isBle || !isLocation) { return ; }
+    // if (!isLocation){ setState( () =>   widget.bleStatusMsg = "Status: Turn on mobile location");}
+    // if (!isBle){ setState(() => widget.bleStatusMsg = "Status: Turn on mobile bluetooth adapter");}
+    // if ( !isBle || !isLocation) { return ; }
     setState(() =>   widget.bleStatusMsg = "Status: Scanning..." );
     setState(() =>  widget.capnoDevices.length = 0);
     setState(() =>  widget.bleDevices.length = 0);
 
+    print ("Started scanning");
     Guid goGoServiceGuid = Guid("00001000-0000-1000-8000-00805f9b34fb");
     List<Guid> scanServices = [goGoServiceGuid];
 
@@ -175,6 +176,7 @@ class _BLEScreenState extends State<BLEScreen> {
       if (!capnoTrainer.isConnected){
         setState(() => widget.bleStatusMsg = "Status: Connecting to ${widget.bleDevices.elementAt(index).advName}");
         await FlutterBluePlus.stopScan();
+        print (widget.bleDevices.elementAt(index));
         await capnoTrainer.connect(widget.bleDevices.elementAt(index), onDataReceived);
       } else {
         await capnoTrainer.disconnect();

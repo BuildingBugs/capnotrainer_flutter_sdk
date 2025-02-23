@@ -28,6 +28,14 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Breathing Lab requires bluetooth access to connect to instruments</string>
+
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Breathing Lab requires bluetooth access to connect to instruments</string>
+
+
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
