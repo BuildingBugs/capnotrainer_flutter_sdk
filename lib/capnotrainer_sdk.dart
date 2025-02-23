@@ -26,14 +26,14 @@ class CapnoTrainer {
 
   bool get isConnected => _deviceConnectionState == BluetoothConnectionState.connected;
 
-  Future<void> connect(BluetoothDevice d, Function onData) async {
-   
+  Future<void> connect(BluetoothDevice d, Function onData, { debug : false, autoConnect : false }) async {
+    _debugLog = debug ; 
     device = d;
     onDataReceived = onData;
 
     if (!isConnected){
       try{
-        await device.connect(autoConnect: true);
+        await device.connect(autoConnect: autoConnect);
       } catch(e){
         if (_printLog) print ("[CapnoTrainer SDK] ${e}");
       }
